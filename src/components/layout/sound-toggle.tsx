@@ -31,7 +31,9 @@ export function SoundToggle() {
       const peaks = audio.sampleWaveform(BAR_COUNT);
       setWave(
         peaks
-          .map((p) => BARS[Math.min(BARS.length - 1, Math.floor(p * BARS.length))])
+          .map((p) =>
+            BARS[Math.min(BARS.length - 1, Math.floor(p * BARS.length))],
+          )
           .join(""),
       );
     }, 90);

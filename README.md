@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# folio — design engineer portfolio
 
-## Getting Started
+Single-page, pinned-scroll portfolio built as an interface-systems showcase:
+Navier–Stokes fluid background, liquid-metal hero scene, kinetic variable-font
+typography, matrix-morph case studies, ⌘K command palette, opt-in synthesized
+sound.
 
-First, run the development server:
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
+Framer Motion · GSAP ScrollTrigger · Lenis · Three.js + R3F + drei · Zustand · cmdk
+
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev     # development server (Turbopack)
+npm run build   # production build + typecheck
+npm run start   # serve production build
+npm run lint    # eslint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full directory contract,
+design-token rules, motion conventions and performance gates.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/app          routes, layout, global tokens
+src/components   layout chrome · sections · ui primitives · motion primitives
+                 projects domain · canvas experiments
+src/data         typed content modules (edit these to change the site)
+src/lib          engines and utilities (audio, fluid sim, physics, highlight)
+src/store        zustand ui state
+```
 
-## Learn More
+## Content
 
-To learn more about Next.js, take a look at the following resources:
+All identity content lives in `src/data/site.ts` and `src/data/projects.ts`.
+Current values are **placeholders** — replace names, email, socials, project
+entries, metrics and links before deploying. No achievements or history are
+claimed anywhere in the codebase; everything is data-driven.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Accessibility & performance contracts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Skip link → `#main`; single `h1`; hierarchical headings
+- Full keyboard paths: palette (⌘K), menu, explorer (Esc/backdrop/swipe)
+- `prefers-reduced-motion`: Lenis off, depth stack static, WebGL replaced by
+  static gradients, kinetic/magnetic systems disabled
+- WebGL contexts are capability-gated, visibility-paused, DPR-capped and
+  tier-degraded via PerformanceMonitor

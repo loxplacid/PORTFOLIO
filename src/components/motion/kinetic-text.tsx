@@ -111,34 +111,62 @@ export function KineticText({ text, className }: KineticTextProps) {
   // ── Animation loop ──────────────────────────────────────────────────────────
   // useCallback with empty deps → stable reference → useAnimationFrame
   // subscribes once and never re-subscribes on re-render.
+  const idleSettled = useRef(false);
+
   const tick = useCallback((_t: number, deltaMs: number) => {
     if (!enabled.current || !visible.current) return;
+
+    const h0 = holderRef.current;
+    if (!h0) return;
 
     const dt = deltaMs / 1000; // ms → seconds for spring integration
     const px = pointer.current.x;
     const py = pointer.current.y;
     const n  = chars.length;
 
+    // Coarse containment test: one rect read instead of n glyph reads.
+    const cr      = h0.getBoundingClientRect();
+    const reach   = Math.hypot(cr.width, cr.height) / 2 + RADIUS + 120;
+    const outside = Math.hypot(px - (cr.left + cr.width / 2), py - (cr.top + cr.height / 2)) > reach;
+
+    let maxStep = 0;
+
     for (let i = 0; i < n; i++) {
       const el = spanRefs.current[i];
       if (!el) continue;
 
-      const r    = el.getBoundingClientRect();
-      const dist = Math.hypot(r.left + r.width * 0.5 - px, r.top + r.height * 0.5 - py);
+      let influence = 0;
+      if (!outside) {
+        const r    = el.getBoundingClientRect();
+        const dist = Math.hypot(r.left + r.width * 0.5 - px, r.top + r.height * 0.5 - py);
+        influence  = p4out(Math.max(0, 1 - dist / RADIUS));
+      }
 
-      // Normalised proximity → power4.out influence
-      const influence = p4out(Math.max(0, 1 - dist / RADIUS));
+      const beforeW = sw.current[i].pos;
+      const beforeD = sd.current[i].pos;
+      const beforeS = sl.current[i].pos;
+      const beforeO = so.current[i].pos;
 
       step(sw.current[i], WGHT_REST + influence * (WGHT_PEAK - WGHT_REST), dt);
       step(sd.current[i], WDTH_REST + influence * (WDTH_PEAK - WDTH_REST), dt);
       step(sl.current[i], SLNT_REST + influence * (SLNT_PEAK - SLNT_REST), dt);
       step(so.current[i], OPSZ_REST + influence * (OPSZ_PEAK - OPSZ_REST), dt);
 
-      el.style.fontVariationSettings =
-        `'wght' ${sw.current[i].pos.toFixed(1)},` +
-        ` 'wdth' ${sd.current[i].pos.toFixed(1)},` +
-        ` 'slnt' ${sl.current[i].pos.toFixed(2)},` +
-        ` 'opsz' ${so.current[i].pos.toFixed(1)}`;
+      maxStep = Math.max(
+        maxStep,
+        Math.abs(sw.current[i].pos - beforeW),
+        Math.abs(sd.current[i].pos - beforeD),
+        Math.abs(sl.current[i].pos - beforeS),
+        Math.abs(so.current[i].pos - beforeO),
+      );
+
+      if (!outside || !idleSettled.current) {
+        el.style.fontVariationSettings =
+          `'wght' ${sw.current[i].pos.toFixed(1)},` +
+          ` 'wdth' ${sd.current[i].pos.toFixed(1)},` +
+          ` 'slnt' ${sl.current[i].pos.toFixed(2)},` +
+          ` 'opsz' ${so.current[i].pos.toFixed(1)}`;
+      }
     }
 
     // Container scroll-velocity skew + letter-spacing stretch
@@ -149,12 +177,16 @@ export function KineticText({ text, className }: KineticTextProps) {
     step(skewSp.current,   tSkew, dt);
     step(lspaceSp.current, tLsp,  dt);
 
-    const h = holderRef.current;
-    if (h) {
-      h.style.display       = "inline-block";
-      h.style.transform     = `skewX(${skewSp.current.pos.toFixed(3)}deg)`;
-      h.style.letterSpacing = `${lspaceSp.current.pos.toFixed(4)}em`;
+    if (!outside || Math.abs(skewSp.current.pos) > 0.01 || lspaceSp.current.pos > 0.002) {
+      const h = holderRef.current;
+      if (h) {
+        h.style.display       = "inline-block";
+        h.style.transform     = `skewX(${skewSp.current.pos.toFixed(3)}deg)`;
+        h.style.letterSpacing = `${lspaceSp.current.pos.toFixed(4)}em`;
+      }
     }
+
+    idleSettled.current = outside && maxStep < 0.05;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — reads everything via refs
 

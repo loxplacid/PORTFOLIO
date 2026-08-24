@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { EASE_EXPO as EASE } from "@/lib/motion-tokens";
 import { useMounted } from "@/lib/use-mounted";
 
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
+
 
 interface RevealProps {
   children: React.ReactNode;

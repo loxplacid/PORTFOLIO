@@ -8,12 +8,12 @@ import { KineticText } from "@/components/motion/kinetic-text";
 import { Reveal } from "@/components/motion/reveal";
 import { MagneticLink } from "@/components/ui/magnetic-link";
 import { StatusPill } from "@/components/ui/status-pill";
-import { GlassChip } from "@/components/ui/glass-chip";
 import { useFieldMode } from "@/lib/use-webgl-mode";
 import { useMounted } from "@/lib/use-mounted";
 import { useGpuTier } from "@/lib/use-gpu-tier";
 import { scrollToTarget } from "@/components/layout/smooth-scroll";
 import { useUIStore } from "@/store/ui-store";
+import { IDENTITY_DISPLAY } from "@/data/site";
 import { FieldFallback } from "./field-fallback";
 
 const HeroScene = dynamic(() => import("./hero-scene"), {
@@ -29,9 +29,7 @@ export function Hero() {
   const tier = graphicsOverride === "auto" ? detected : graphicsOverride;
   const fieldMode = mounted ? mode : "pending";
   const [fps, setFps] = useState<number | null>(null);
-  const [vramMb, setVramMb] = useState<number | null>(null);
   const handleFps = useCallback((value: number) => setFps(value), []);
-  const handleVram = useCallback((mb: number) => setVramMb(mb), []);
   const sectionRef = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(true);
 
@@ -49,45 +47,35 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative isolate flex h-[100svh] flex-col overflow-hidden"
+      className="relative isolate flex h-full flex-col overflow-hidden"
     >
-      {theme === "dark" && fieldMode === "webgl" ? (        <motion.div
+      {theme === "dark" && fieldMode === "webgl" ? (
+        <motion.div
           className="pointer-events-none absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.4, ease: "easeOut" }}
         >
-          <HeroScene active={inView} tier={tier} onFps={handleFps} onVram={handleVram} sectionIndex={0} />
+          <HeroScene active={inView} tier={tier} onFps={handleFps} />
         </motion.div>
       ) : (
         <FieldFallback />
       )}
 
-      {theme === "dark" && fieldMode === "webgl" ? (        <div
+      {theme === "dark" && fieldMode === "webgl" ? (
+        <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-[5] hidden lg:block"
         >
-          <GlassChip className="left-[71%] top-[19%]" depth={16}>
+          <div className="absolute left-[71%] top-[19%] border-l border-line pl-4">
             <p className="font-mono text-micro text-faint">
               GPU field — liquid metal
             </p>
             <p className="mt-1 font-mono text-micro text-accent">
               {fps ? `${String(fps).padStart(2, "0")} fps` : "calibrating"} ·{" "}
-              {tier === "low" ? "eco mode" : "glsl fbm"}
-              {vramMb !== null ? ` · ${vramMb}mb vram` : ""}
+              {tier === "low" ? "eco mode" : "glsl"}
             </p>
-          </GlassChip>
-          <GlassChip className="left-[68%] top-[75%]" depth={24}>
-            <span className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="size-2 rounded-full bg-accent animate-pulse-dot"
-              />
-              <span className="font-mono text-micro text-dim">
-                env sync · live hue
-              </span>
-            </span>
-          </GlassChip>
+          </div>
         </div>
       ) : null}
 
@@ -95,10 +83,13 @@ export function Hero() {
         <Reveal delay={0.05}>
           <div className="grid-bespoke items-center gap-y-3 border-b border-line pb-5">
             <p className="col-span-8 font-mono text-micro text-dim md:col-span-4">
-              Folio — 2026
+              {IDENTITY_DISPLAY.name} — {new Date().getFullYear()}
             </p>
             <p className="col-span-4 hidden font-mono text-micro text-faint md:col-span-4 md:block">
-              Interface practice
+              {IDENTITY_DISPLAY.role}
+              {IDENTITY_DISPLAY.pronouns
+                ? ` · ${IDENTITY_DISPLAY.pronouns}`
+                : ""}
             </p>
             <p className="col-span-4 hidden text-right font-mono text-micro text-faint md:col-span-4 md:block">
               [ 01 ]
@@ -115,14 +106,18 @@ export function Hero() {
           </Reveal>
 
           <h1 className="font-display font-semibold uppercase">
-            <KineticText text="Design" className="block text-hero" />
-            <KineticText text="Engineer" className="block text-hero text-hollow" />
+            {splitRole(IDENTITY_DISPLAY.role).map((line, i) => (
+              <KineticText
+                key={i}
+                text={line}
+                className={`block text-hero${i % 2 === 1 ? " text-hollow" : ""}`}
+              />
+            ))}
           </h1>
 
           <Reveal delay={0.65} className="mt-10 max-w-xl">
             <p className="text-lede text-dim">
-              Interfaces built where typography, motion and systems engineering
-              meet — measured, deliberate, and fast.
+              {IDENTITY_DISPLAY.positioningShort}
             </p>
           </Reveal>
 
@@ -169,4 +164,12 @@ export function Hero() {
       </div>
     </section>
   );
+}
+
+/** Split the role into display lines: two words → two lines, longer → balanced halves. */
+function splitRole(role: string): string[] {
+  const words = role.trim().split(/\s+/);
+  if (words.length <= 1) return words;
+  const mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }

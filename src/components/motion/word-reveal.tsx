@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
+import { EASE_EXPO as EASE } from "@/lib/motion-tokens";
 
 export interface RevealLine {
   id: string;

@@ -5,12 +5,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type ReactNode } from "react";
 import { PROJECTS, PROJECT_TAGS } from "@/data/projects";
 import { SECTIONS } from "@/data/sections";
-import { SITE } from "@/data/site";
+import { CONTACT, SITE_MODE } from "@/data/site";
 import { audio } from "@/lib/audio-engine";
+import { EASE_EXPO as EASE } from "@/lib/motion-tokens";
 import { scrollToTarget } from "./smooth-scroll";
 import { useUIStore } from "@/store/ui-store";
-
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export function openCommandPalette(): void {
   window.dispatchEvent(new Event("open-command-palette"));
@@ -66,8 +65,10 @@ export function CommandPalette() {
   }
 
   async function copyEmail() {
+    const email = CONTACT.email;
+    if (!email) return;
     try {
-      await navigator.clipboard.writeText(SITE.email);
+      await navigator.clipboard.writeText(email);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -151,9 +152,9 @@ export function CommandPalette() {
                 <Group heading="Open project">
                   {PROJECTS.map((project) => (
                     <Item
-                      key={project.id}
-                      onSelect={() => run(() => requestProject(project.id))}
-                      hint={project.tags[0]}
+                      key={project.slug}
+                      onSelect={() => run(() => requestProject(project.slug))}
+                      hint={project.placeholder ? "placeholder" : project.tags[0]}
                     >
                       {project.title}
                     </Item>
@@ -179,12 +180,20 @@ export function CommandPalette() {
                   >
                     Graphics quality
                   </Item>
-                  <Item
-                    onSelect={() => run(copyEmail)}
-                    hint={copied ? "copied" : "clipboard"}
-                  >
-                    {copied ? "Email copied to clipboard" : SITE.email}
-                  </Item>
+                  {SITE_MODE === "demo" ? (
+                    <Item onSelect={() => {}} hint="demo">
+                      Demo content — placeholders active
+                    </Item>
+                  ) : CONTACT.email ? (
+                    <Item
+                      onSelect={() => run(copyEmail)}
+                      hint={copied ? "copied" : "clipboard"}
+                    >
+                      {copied
+                        ? "Email copied to clipboard"
+                        : `Copy email — ${CONTACT.email}`}
+                    </Item>
+                  ) : null}
                 </Group>
               </Command.List>
 

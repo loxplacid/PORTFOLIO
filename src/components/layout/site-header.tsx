@@ -10,6 +10,7 @@ import { SoundToggle } from "@/components/layout/sound-toggle";
 import { useActiveSection } from "@/lib/use-active-section";
 import { audio } from "@/lib/audio-engine";
 import { useUIStore } from "@/store/ui-store";
+import { IDENTITY_DISPLAY } from "@/data/site";
 
 export function SiteHeader() {
   const active = useActiveSection();
@@ -37,7 +38,7 @@ export function SiteHeader() {
           <span className="text-accent transition-transform duration-500 group-hover:rotate-180">
             *
           </span>
-          <span>folio</span>
+          <span>{IDENTITY_DISPLAY.name}</span>
         </button>
 
         <div className="flex items-center gap-3">

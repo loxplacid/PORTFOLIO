@@ -27,11 +27,17 @@ class HeroWorkerBridge {
     this.initialized = true;
     this.canvas = canvas;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.worker = new Worker(
         new URL("../workers/hero-gl.worker.ts", import.meta.url),
         { type: "module" },
       );
+
+      // Worker construction or script-level errors must reject so the
+      // caller can fall back — otherwise the canvas stays blank forever.
+      this.worker.onerror = (event) => {
+        reject(event.error ?? new Error("hero GL worker failed to load"));
+      };
 
       this.worker.onmessage = (e: MessageEvent<FromWorkerMsg>) => {
         const msg = e.data;

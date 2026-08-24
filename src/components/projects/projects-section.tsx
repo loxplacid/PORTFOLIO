@@ -13,24 +13,21 @@ import {
   type ProjectTag,
 } from "@/data/projects";
 import { audio } from "@/lib/audio-engine";
+import {
+  EASE_EXPO as EASE,
+  ENTER_TRANSITION,
+  EXIT_TRANSITION,
+  SPRING_LAYOUT,
+} from "@/lib/motion-tokens";
 import { useUIStore } from "@/store/ui-store";
 import { KineticText } from "@/components/motion/kinetic-text";
 import { Reveal } from "@/components/motion/reveal";
+import { Eyebrow } from "@/components/ui/primitives";
 import { ProjectExplorer } from "./project-explorer";
 import { FloatingPreview } from "./floating-preview";
 import type { MorphRect } from "@/lib/use-morph-rect";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const SPRING = {
-  type: "spring",
-  stiffness: 300,
-  damping: 28,
-} as const;
-
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
-const ENTER_TRANSITION = { duration: 0.45, ease: EASE };
-const EXIT_TRANSITION = { duration: 0.26, ease: EASE };
 
 type Filter = "All" | ProjectTag;
 
@@ -133,7 +130,7 @@ export function ProjectsSection() {
         className="h-full overflow-y-auto overscroll-contain"
       >
         <LayoutGroup>
-          <div className="shell py-16 sm:py-24">
+          <div className="shell pad-section-lg">
             <Reveal>
               <div
                 ref={headerRef}
@@ -141,17 +138,15 @@ export function ProjectsSection() {
                 className="fluid-heading flex flex-wrap items-end justify-between gap-6 border-b border-line pb-8"
               >
                 <div>
-                  <p className="mb-5 font-mono text-micro text-faint">
-                    Selected work — 02
-                  </p>
+                  <Eyebrow className="mb-5">Selected work — 02</Eyebrow>
                   <h2 className="font-display font-semibold uppercase">
                     <KineticText text="Selected" className="block text-display" />
                     <KineticText text="Work" className="block text-display text-hollow" />
                   </h2>
                 </div>
                 <p className="max-w-xs pb-1 text-right font-mono text-micro text-faint">
-                  Six builds, one obsession — interfaces that hold up under
-                  load.
+                  Placeholder slots reserved for real work — every entry is
+                  disclosed as such until replaced.
                 </p>
               </div>
             </Reveal>
@@ -191,7 +186,7 @@ export function ProjectsSection() {
             <motion.ul
               ref={listRef}
               layout
-              transition={SPRING}
+              transition={SPRING_LAYOUT}
               className={`transition-opacity duration-300 ${
                 activeId ? "opacity-30" : "opacity-100"
               }`}
@@ -200,7 +195,7 @@ export function ProjectsSection() {
                 {filtered.map((project) => (
                   <motion.li
                     layout
-                    key={project.id}
+                    key={project.slug}
                     data-row
                     initial={{ opacity: 0, y: 26 }}
                     animate={{
@@ -213,10 +208,10 @@ export function ProjectsSection() {
                       y: -14,
                       transition: EXIT_TRANSITION,
                     }}
-                    onMouseEnter={() => setPreviewId(project.id)}
+                    onMouseEnter={() => setPreviewId(project.slug)}
                     onMouseLeave={() =>
                       setPreviewId((cur) =>
-                        cur === project.id && activeId !== project.id
+                        cur === project.slug && activeId !== project.slug
                           ? null
                           : cur,
                       )
@@ -224,7 +219,7 @@ export function ProjectsSection() {
                   >
                     <button
                       type="button"
-                      onClick={(e) => handleOpen(project.id, e.currentTarget)}
+                      onClick={(e) => handleOpen(project.slug, e.currentTarget)}
                       aria-haspopup="dialog"
                       data-sound
                       className="group relative w-full border-t border-line py-6 text-left sm:py-8"
@@ -331,14 +326,14 @@ function FilterChip({ label, count, active, onSelect }: FilterChipProps) {
       type="button"
       onClick={onSelect}
       aria-pressed={active}
-      transition={SPRING}
+      transition={SPRING_LAYOUT}
       className="relative rounded-full px-4 py-2 font-mono text-micro"
     >
       {active ? (
         <motion.span
           layoutId="activeFilter"
           className="absolute inset-0 rounded-full bg-accent"
-          transition={SPRING}
+          transition={SPRING_LAYOUT}
         />
       ) : (
         <span className="absolute inset-0 rounded-full border border-line bg-surface/60" />

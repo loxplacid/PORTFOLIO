@@ -9,11 +9,12 @@ import {
 } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { getProject } from "@/data/projects";
+import {
+  EASE_EXPO as EASE,
+  SPRING_FOLLOW,
+  SPRING_LAYOUT,
+} from "@/lib/motion-tokens";
 import { ProjectVisual } from "./project-visual";
-
-const SPRING_CURSOR = { stiffness: 150, damping: 15 };
-const SPRING_TILT = { stiffness: 300, damping: 28 };
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 const CARD_W = 336;
 const CARD_H = 252; // 4:3
@@ -21,16 +22,16 @@ const CARD_H = 252; // 4:3
 export function FloatingPreview({ projectId }: { projectId: string | null }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const springX = useSpring(x, SPRING_CURSOR);
-  const springY = useSpring(y, SPRING_CURSOR);
+  const springX = useSpring(x, SPRING_FOLLOW);
+  const springY = useSpring(y, SPRING_FOLLOW);
   const rotate = useMotionValue(0);
-  const springRotate = useSpring(rotate, SPRING_CURSOR);
+  const springRotate = useSpring(rotate, SPRING_FOLLOW);
 
   // Tilt: raw pointer offset relative to card center
   const rawTiltX = useMotionValue(0);
   const rawTiltY = useMotionValue(0);
-  const tiltX = useSpring(rawTiltX, SPRING_TILT);
-  const tiltY = useSpring(rawTiltY, SPRING_TILT);
+  const tiltX = useSpring(rawTiltX, SPRING_LAYOUT);
+  const tiltY = useSpring(rawTiltY, SPRING_LAYOUT);
 
   // Map tilt values to rotateX/rotateY degrees
   const rotateX = useTransform(tiltY, [-1, 1], [12, -12]);
@@ -90,7 +91,7 @@ export function FloatingPreview({ projectId }: { projectId: string | null }) {
             <div className="ml-12 -translate-y-1/2" style={{ perspective: 800 }}>
               <motion.div
                 ref={cardRef}
-                layoutId={`project-cover-${project.id}`}
+                layoutId={`project-cover-${project.slug}`}
                 className="w-[21rem] overflow-hidden border border-line shadow-2xl shadow-black/60"
                 style={{
                   borderRadius: "0.75rem",

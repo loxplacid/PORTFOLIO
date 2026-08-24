@@ -2,14 +2,15 @@
 
 import { Hero } from "@/components/hero/hero";
 import { ProjectsSection } from "@/components/projects/projects-section";
-import { AboutSection, ArchiveSection } from "@/components/sections/archive-about";
+import { AboutSection } from "@/components/sections/about-section";
+import { ArchiveSection } from "@/components/sections/archive-section";
 import { ContactSection } from "@/components/sections/contact-section";
 import { PinnedStack } from "@/components/layout/pinned-stack";
 
 export default function Home() {
   return (
     <PinnedStack>
-      <main className="relative z-10">
+        <main id="main" className="relative z-10">
         <section id="index" data-pin-panel className="pin-screen">
           <Hero />
         </section>

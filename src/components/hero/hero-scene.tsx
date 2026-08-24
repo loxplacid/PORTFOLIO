@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { heroWorkerBridge } from "@/lib/hero-worker-bridge";
 import type { GpuTier } from "@/lib/use-gpu-tier";
+import { FieldFallback } from "./field-fallback";
+
+/** If the worker hasn't reported ready in this window, fall back to static. */
+const READY_TIMEOUT_MS = 4000;
 
 interface HeroSceneProps {
   active: boolean;
@@ -21,6 +25,7 @@ export default function HeroScene({
 }: HeroSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   // ── Init worker once ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -28,11 +33,32 @@ export default function HeroScene({
     if (!canvas) return;
 
     // OffscreenCanvas is required; fall back gracefully if unavailable
-    if (typeof canvas.transferControlToOffscreen !== "function") return;
+    if (typeof canvas.transferControlToOffscreen !== "function") {
+      setFailed(true);
+      return;
+    }
 
-    heroWorkerBridge.init(canvas, tier).then(() => setReady(true));
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setFailed(true);
+    }, READY_TIMEOUT_MS);
+
+    heroWorkerBridge
+      .init(canvas, tier)
+      .then(() => {
+        if (cancelled) return;
+        window.clearTimeout(timeout);
+        setReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        window.clearTimeout(timeout);
+        setFailed(true);
+      });
 
     return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
       heroWorkerBridge.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,11 +116,16 @@ export default function HeroScene({
     };
   }, [ready]);
 
+  // ── Worker unavailable → static fallback (never a blank canvas) ────────────
+  if (failed) {
+    return <FieldFallback />;
+  }
+
   return (
     <canvas
       ref={canvasRef}
       className="absolute inset-0 h-full w-full"
-      style={{ display: "block" }}
+      style={{ display: "block", opacity: ready ? 1 : 0 }}
       aria-hidden
     />
   );

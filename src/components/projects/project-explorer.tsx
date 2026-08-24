@@ -7,15 +7,26 @@ import { createPortal } from "react-dom";
 import type { Project } from "@/data/projects";
 import { useEscapeKey, useScrollLock } from "@/lib/use-scroll-lock";
 import { useMounted } from "@/lib/use-mounted";
+import {
+  EASE_EXPO as EASE,
+  EASE_IN_OUT_QUINT as MATRIX_EASE,
+} from "@/lib/motion-tokens";
 import { cn } from "@/lib/utils";
 import { CodeBlock } from "@/components/ui/code-block";
+import { ProjectMedia } from "@/components/media/project-media";
 import { ProjectVisual } from "./project-visual";
-import { SandboxPreview } from "./sandbox-preview";
+import { ShaderPlaceholderRenderer } from "./sandbox-preview";
+import {
+  CaseStudyNarrative,
+  MetricGrid,
+  PlaceholderDisclosure,
+  ProjectLinks,
+} from "./case-study";
 import type { MorphRect } from "@/lib/use-morph-rect";
 
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
-const MATRIX_EASE = [0.87, 0, 0.13, 1] as [number, number, number, number];
-const MORPH_DURATION = 0.62;
+
+
+
 
 interface ProjectExplorerProps {
   project: Project | null;
@@ -41,7 +52,7 @@ export function ProjectExplorer({
     <AnimatePresence onExitComplete={onExited}>
       {open && project ? (
         <MorphPanel
-          key={project.id}
+          key={project.slug}
           project={project}
           rect={originRect}
           onClose={onClose}
@@ -86,6 +97,16 @@ function MorphPanel({
 
   const dragRaw = useMotionValue(0);
   const dragY = useSpring(dragRaw, { stiffness: 320, damping: 34 });
+  const [pullHint, setPullHint] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = dragRaw.on("change", (value) => {
+      const shouldShow = value > 70;
+      setPullHint((previous) => (previous === shouldShow ? previous : shouldShow));
+    });
+    return unsubscribe;
+  }, [dragRaw]);
+
   const dragState = useRef<{ startY: number; active: boolean } | null>(null);
 
   useEscapeKey(true, () => {
@@ -169,7 +190,7 @@ function MorphPanel({
           width: "100vw",
           height: "100vh",
           borderRadius: 0,
-          transition: { duration: MORPH_DURATION, ease: MATRIX_EASE },
+          transition: { duration: 0.62, ease: MATRIX_EASE },
         }}
         exit={{
           left: source.left,
@@ -187,6 +208,28 @@ function MorphPanel({
         }}
       >
         <motion.div style={{ y: dragY }} className="absolute inset-0">
+          <motion.div
+            style={{ y: dragY }}
+            className="pointer-events-none absolute left-1/2 top-6 z-30 -translate-x-1/2"
+            initial={false}
+          >
+            <AnimatePresence>
+              {pullHint ? (
+                <motion.div
+                  key="pull-hint"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 rounded-full border border-line bg-background/80 px-4 py-2 font-mono text-micro text-dim backdrop-blur-md"
+                >
+                  <ChevronDown size={13} className="animate-bounce" />
+                  Release to close
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
+
           <motion.div
             className="relative h-[44svh] min-h-[300px]"
             initial={false}
@@ -240,58 +283,41 @@ function MorphPanel({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: EASE }}
               >
-                <p className="max-w-2xl text-lede text-dim">{project.summary}</p>
+                <p className="max-w-2xl text-lede text-dim">
+                  {project.shortDescription}
+                </p>
+                {project.detailedDescription ? (
+                  <p className="max-w-2xl text-body leading-relaxed text-dim">
+                    {project.detailedDescription}
+                  </p>
+                ) : null}
 
-                <section aria-label="Live sandbox" className="space-y-4">
-                  <div className="flex items-baseline justify-between">
-                    <h3 className="font-mono text-micro text-faint">
-                      Interactive sandbox
-                    </h3>
-                    <span className="font-mono text-micro text-faint">
-                      {project.sandboxUrl ? "remote build" : "local glsl"}
-                    </span>
-                  </div>
-                  <SandboxPreview project={project} />
-                </section>
+                <PlaceholderDisclosure />
 
-                <section aria-label="Key metrics" className="space-y-4">
-                  <h3 className="font-mono text-micro text-faint">
-                    Performance envelope
-                  </h3>
-                  <div className="grid grid-cols-3 divide-x divide-line rounded-xl border border-line">
-                    {project.metrics.map((metric) => (
-                      <div key={metric.label} className="px-5 py-6">
-                        <p className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                          {metric.value}
-                        </p>
-                        <p className="mt-1.5 font-mono text-micro text-faint">
-                          {metric.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                <ProjectLinks project={project} />
 
-                <section aria-label="Architecture breakdown" className="space-y-4">
-                  <h3 className="font-mono text-micro text-faint">
-                    Technical breakdown
-                  </h3>
-                  <ol className="grid gap-4 sm:grid-cols-2">
-                    {project.architecture.map((line, i) => (
-                      <li
-                        key={i}
-                        className="flex gap-4 rounded-xl border border-line bg-background/60 p-4"
-                      >
-                        <span className="pt-0.5 font-mono text-micro text-accent-deep">
-                          0{i + 1}
-                        </span>
-                        <span className="text-fine leading-relaxed text-dim">
-                          {line}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
+                {project.media.length > 0 ? (
+                  <section aria-label="Media" className="space-y-4">
+                    <h3 className="font-mono text-micro text-faint">Media</h3>
+                    <div className="space-y-6">
+                      {project.media.map((item) => (
+                        <ProjectMedia
+                          key={item.id}
+                          media={item}
+                          renderWebgl={
+                            item.kind === "webgl-placeholder"
+                              ? ShaderPlaceholderRenderer({ project })
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                <CaseStudyNarrative caseStudy={project.caseStudy} />
+
+                <MetricGrid metrics={project.metrics} />
 
                 <ul className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (

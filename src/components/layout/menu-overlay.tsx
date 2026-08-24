@@ -5,10 +5,9 @@ import { ArrowUpRight } from "lucide-react";
 import { SECTIONS } from "@/data/sections";
 import { scrollToTarget } from "@/components/layout/smooth-scroll";
 import { useActiveSection } from "@/lib/use-active-section";
+import { EASE_EXPO as EASE } from "@/lib/motion-tokens";
 import { useEscapeKey, useScrollLock } from "@/lib/use-scroll-lock";
 import { useUIStore } from "@/store/ui-store";
-
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export function MenuOverlay() {
   const menuOpen = useUIStore((s) => s.menuOpen);

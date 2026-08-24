@@ -1,11 +1,20 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ShaderMaterial } from "three";
 import { Vector2 } from "three";
 import { oklchToRgb } from "@/lib/color";
 import type { Project } from "@/data/projects";
+
+/**
+ * DECORATIVE SHADER PLACEHOLDER — not a project demo.
+ *
+ * This canvas renders an abstract motif keyed off each placeholder entry's
+ * hue/variant so case-study layouts can be evaluated before real media
+ * exists. It must never be presented as footage of the actual project; the
+ * surrounding <ProjectMedia> frame labels it as decorative.
+ */
 
 const QUAD_VERTEX = `
 varying vec2 vUv;
@@ -123,35 +132,56 @@ function variantIndex(variant: Project["variant"]): number {
   }
 }
 
-export function SandboxPreview({ project }: { project: Project }) {
-  if (project.sandboxUrl) {
+/** Render callback handed to <ProjectMedia kind="webgl-placeholder">. */
+export function ShaderPlaceholderRenderer({ project }: { project: Project }) {
+  function ShaderPlaceholderCanvas({ paused }: { paused: boolean }) {
     return (
-      <iframe
-        src={project.sandboxUrl}
-        title={`${project.title} live preview`}
-        loading="lazy"
-        allow="accelerometer; gyroscope; xr-spatial-tracking; fullscreen"
-        className="aspect-video w-full rounded-xl border border-line bg-black"
-      />
-    );
-  }
-
-  return (
-    <div
-      data-sandbox-host
-      className="relative aspect-video w-full overflow-hidden rounded-xl border border-line bg-black"
-    >
       <Canvas
         orthographic
         dpr={[1, 1.5]}
+        frameloop={paused ? "never" : "always"}
         camera={{ position: [0, 0, 10], zoom: 1 }}
         gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       >
         <PreviewQuad project={project} />
       </Canvas>
-      <div className="pointer-events-none absolute bottom-3 left-3 rounded-md border border-white/10 bg-background/70 px-2.5 py-1.5 font-mono text-micro text-dim backdrop-blur-sm">
-        Live sandbox — {project.variant} · move cursor to disturb
-      </div>
+    );
+  }
+  ShaderPlaceholderCanvas.displayName = "ShaderPlaceholderCanvas";
+  return ShaderPlaceholderCanvas;
+}
+
+interface LiveDemoFrameProps {
+  url: string;
+  title: string;
+}
+
+/**
+ * Verified-demo iframe. Rendered ONLY when a project's demoUrl resolves
+ * (verified status, or explicit demo-mode layout preview).
+ */
+export function LiveDemoFrame({ url, title }: LiveDemoFrameProps) {
+  const [frameReady, setFrameReady] = useState(false);
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-line bg-surface">
+      {!frameReady ? (
+        <div aria-hidden className="absolute inset-0 animate-pulse bg-surface" />
+      ) : null}
+      <iframe
+        src={url}
+        title={`${title} live demo`}
+        loading="lazy"
+        onLoad={() => setFrameReady(true)}
+        referrerPolicy="no-referrer"
+        allow="fullscreen"
+        className={`aspect-video h-full w-full transition-opacity duration-500 ${
+          frameReady ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <span className="pointer-events-none absolute bottom-3 left-3 rounded-md border border-line bg-surface/80 px-2.5 py-1.5 font-mono text-micro text-dim backdrop-blur-sm">
+        Live demo — {new URL(url).host}
+      </span>
     </div>
   );
 }
